@@ -42,9 +42,26 @@ The table below summarizes the exact metrics extracted from the deterministicall
 
 ---
 
-## 3. Multi-File Historical Fixes Evidence
+## 3. Historical Multi-File Change Evidence
 
-Multi-file candidate-fix evidence: **NOT EVALUATED** — waiting for Track C candidate base/gold SHAs.
+Historical change evidence was evaluated against the 12 candidate bug/fix pairs provided by Track C in `benchmarks/manifests/manifest.yaml` (see detailed breakdown in [`multi-file-change-evidence.md`](file:///c:/Users/LOQ/RepoPilot/docs/gate_evidence/w1/a/multi-file-change-evidence.md)).
+
+### Summary of Observed Fix Locality
+
+| Candidate Repository | Inspected Pairs | Resolved Full SHAs | Direct-Parent Pairs | Multi-File Pairs (>=2 files) | Multi-Go Pairs (>=2 .go) | Cross-Go-Directory Pairs |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Repo A: `uber-go/zap`** | 3 | 3 (100%) | 3 (100%) | 3 (100%) | 3 (100%) | 1 (`zap_812` touches `.` and `zapcore`) |
+| **Repo B: `stretchr/testify`** | 9 | 9 (100%) | 9 (100%) | 9 (100%) | 9 (100%) | 1 (`testify_b074924` touches `assert` and `require`) |
+
+### Multi-Dimensional Semantic-Richness Synthesis
+
+The Week 1 semantic screening synthesizes distinct evidence streams across different dimensions:
+- **Interfaces & Abstractions**: 22 in zap vs 18 in testify (*Loader AST/type-check evidence*).
+- **Package Hierarchy**: 15 packages in zap vs 10 in testify (*Loader AST/type-check evidence*).
+- **Source-Level Test Presence**: 77 test files / 321 test funcs in zap vs 21 test files / 479 test funcs in testify (*Loader source inventory only; not proof of test execution*).
+- **Multi-File Change Structure**: 100% of candidate pairs across both repositories demonstrate multi-file changes (implementation + tests), with cross-directory modifications observed in both codebases (*Track C base/gold + Git diff evidence*).
+- **Test Reproducibility & Sandbox Execution**: *Pending Track B runner evidence*.
+- **Benchmark Instance Qualification**: *Pending Track C fail-before/pass-after validation and G0 gate review*.
 
 ---
 

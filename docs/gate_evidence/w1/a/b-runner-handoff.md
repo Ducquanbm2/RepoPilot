@@ -43,3 +43,13 @@ Track B should verify build/test reproducibility independently using the followi
 
 - **Status**: **PENDING B EXECUTION**
 - No pass/fail claims are asserted by Track A. Verification of candidate test pass rates requires Track B sandbox execution evidence.
+
+---
+
+## 4. Track C Candidate Manifest Integration
+
+Track C candidate manifest has now been merged into `benchmarks/manifests/manifest.yaml`. It contains 12 candidate base/gold historical fix SHAs and targeted candidate test commands for `uber-go/zap` (3 instances) and `stretchr/testify` (9 instances).
+
+- Track A has **not** executed those candidate test commands.
+- Structural changed-file and Git-history evidence is documented in [`multi-file-change-evidence.md`](file:///c:/Users/LOQ/RepoPilot/docs/gate_evidence/w1/a/multi-file-change-evidence.md).
+- Track B can use the base/gold commit pairs and targeted test commands in `benchmarks/manifests/manifest.yaml` for isolated sandbox reproduction and fail-before/pass-after validation.
