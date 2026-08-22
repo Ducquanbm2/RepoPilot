@@ -118,6 +118,7 @@ def build_instance(instance: dict, args: argparse.Namespace) -> None:
         f.write("\n")
 
     print(f"built {instance['instance_id']}: {output_patch}")
+    # anti của t có sửa chút code trong hàm này của nam nma t thấy kqa vẫn v nên kệ
 
 
 def main() -> int:
