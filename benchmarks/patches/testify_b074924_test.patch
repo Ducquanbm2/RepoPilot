@@ -1,0 +1,87 @@
+diff --git a/assert/assertions_test.go b/assert/assertions_test.go
+index 8b87727..064b92f 100644
+--- a/assert/assertions_test.go
++++ b/assert/assertions_test.go
+@@ -2923,16 +2923,15 @@ func TestEventuallyWithTFalse(t *testing.T) {
+ func TestEventuallyWithTTrue(t *testing.T) {
+ 	mockT := new(errorsCapturingT)
+ 
+-	state := 0
++	counter := 0
+ 	condition := func(collect *CollectT) {
+-		defer func() {
+-			state += 1
+-		}()
+-		True(collect, state == 2)
++		counter += 1
++		True(collect, counter == 2)
+ 	}
+ 
+ 	True(t, EventuallyWithT(mockT, condition, 100*time.Millisecond, 20*time.Millisecond))
+ 	Len(t, mockT.errors, 0)
++	Equal(t, 2, counter, "Condition is expected to be called 2 times")
+ }
+ 
+ func TestEventuallyWithT_ConcurrencySafe(t *testing.T) {
+@@ -2970,6 +2969,17 @@ func TestEventuallyWithT_ReturnsTheLatestFinishedConditionErrors(t *testing.T) {
+ 	Len(t, mockT.errors, 2)
+ }
+ 
++func TestEventuallyWithTFailNow(t *testing.T) {
++	mockT := new(CollectT)
++
++	condition := func(collect *CollectT) {
++		collect.FailNow()
++	}
++
++	False(t, EventuallyWithT(mockT, condition, 100*time.Millisecond, 20*time.Millisecond))
++	Len(t, mockT.errors, 1)
++}
++
+ func TestNeverFalse(t *testing.T) {
+ 	condition := func() bool {
+ 		return false
+diff --git a/require/requirements_test.go b/require/requirements_test.go
+index febf0c1..824b159 100644
+--- a/require/requirements_test.go
++++ b/require/requirements_test.go
+@@ -5,6 +5,8 @@ import (
+ 	"errors"
+ 	"testing"
+ 	"time"
++
++	"github.com/stretchr/testify/assert"
+ )
+ 
+ // AssertionTesterInterface defines an interface to be used for testing assertion methods
+@@ -681,3 +683,30 @@ func TestErrorAssertionFunc(t *testing.T) {
+ 		})
+ 	}
+ }
++
++func TestEventuallyWithTFalse(t *testing.T) {
++	mockT := new(MockT)
++
++	condition := func(collect *assert.CollectT) {
++		True(collect, false)
++	}
++
++	EventuallyWithT(mockT, condition, 100*time.Millisecond, 20*time.Millisecond)
++	True(t, mockT.Failed, "Check should fail")
++}
++
++func TestEventuallyWithTTrue(t *testing.T) {
++	mockT := new(MockT)
++
++	counter := 0
++	condition := func(collect *assert.CollectT) {
++		defer func() {
++			counter += 1
++		}()
++		True(collect, counter == 1)
++	}
++
++	EventuallyWithT(mockT, condition, 100*time.Millisecond, 20*time.Millisecond)
++	False(t, mockT.Failed, "Check should pass")
++	Equal(t, 2, counter, "Condition is expected to be called 2 times")
++}

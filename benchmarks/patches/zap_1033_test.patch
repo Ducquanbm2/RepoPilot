@@ -1,0 +1,47 @@
+diff --git a/zapcore/sampler_test.go b/zapcore/sampler_test.go
+index fbcdd46..f19a6fc 100644
+--- a/zapcore/sampler_test.go
++++ b/zapcore/sampler_test.go
+@@ -275,3 +275,42 @@ func TestSamplerUnknownLevels(t *testing.T) {
+ 		})
+ 	}
+ }
++
++func TestSamplerWithZeroThereafter(t *testing.T) {
++	var counter countingCore
++
++	// Logs two messages per second.
++	sampler := NewSamplerWithOptions(&counter, time.Second, 2, 0)
++
++	now := time.Now()
++
++	for i := 0; i < 1000; i++ {
++		ent := Entry{
++			Level:   InfoLevel,
++			Message: "msg",
++			Time:    now,
++		}
++		if ce := sampler.Check(ent, nil); ce != nil {
++			ce.Write()
++		}
++	}
++
++	assert.Equal(t, 2, int(counter.logs.Load()),
++		"Unexpected number of logs")
++
++	now = now.Add(time.Second)
++
++	for i := 0; i < 1000; i++ {
++		ent := Entry{
++			Level:   InfoLevel,
++			Message: "msg",
++			Time:    now,
++		}
++		if ce := sampler.Check(ent, nil); ce != nil {
++			ce.Write()
++		}
++	}
++
++	assert.Equal(t, 4, int(counter.logs.Load()),
++		"Unexpected number of logs")
++}

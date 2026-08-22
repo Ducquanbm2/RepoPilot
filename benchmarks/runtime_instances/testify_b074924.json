@@ -1,0 +1,12 @@
+{
+  "instance_id": "testify_b074924",
+  "repo_url": "https://github.com/stretchr/testify",
+  "base_commit": "84619f5c3cc34b4aec7872962246d19f99abf81c",
+  "test_command": "go test ./assert -run '^TestEventuallyWithT' -v",
+  "expected_failing_test": [
+    "TestEventuallyWithTFailNow",
+    "TestEventuallyWithTFalse",
+    "TestEventuallyWithTTrue"
+  ],
+  "test_patch_path": "benchmarks/patches/testify_b074924_test.patch"
+}

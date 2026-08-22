@@ -1,0 +1,11 @@
+{
+  "instance_id": "testify_2a9c44b",
+  "repo_url": "https://github.com/stretchr/testify",
+  "base_commit": "5ac6528bffc1ed7557980c3c563caf8308568446",
+  "test_command": "go test ./assert -run 'Test(Sub|NotSub)set' -v",
+  "expected_failing_test": [
+    "TestSubset",
+    "TestNotSubset"
+  ],
+  "test_patch_path": "benchmarks/patches/testify_2a9c44b_test.patch"
+}

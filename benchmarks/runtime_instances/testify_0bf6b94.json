@@ -1,0 +1,8 @@
+{
+  "instance_id": "testify_0bf6b94",
+  "repo_url": "https://github.com/stretchr/testify",
+  "base_commit": "5fa984a7595bec3f65a1874f6e5a085545121508",
+  "test_command": "go test ./mock -run '^TestIssue1227AssertExpectationsForObjectsWithMock$' -v",
+  "expected_failing_test": "TestIssue1227AssertExpectationsForObjectsWithMock",
+  "test_patch_path": "benchmarks/patches/testify_0bf6b94_test.patch"
+}

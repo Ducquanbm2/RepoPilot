@@ -103,19 +103,20 @@ def build_instance(instance: dict, args: argparse.Namespace) -> None:
 
     output_patch = patch_path(instance, args.project_root, args.patches_dir)
     output_patch.parent.mkdir(parents=True, exist_ok=True)
-    output_patch.write_text(diff, encoding="utf-8")
+    with output_patch.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(diff)
 
     runtime_file = args.runtime_dir / f"{instance['instance_id']}.json"
     runtime_file.parent.mkdir(parents=True, exist_ok=True)
-    runtime_file.write_text(
-        json.dumps(
+    with runtime_file.open("w", encoding="utf-8", newline="\n") as f:
+        json.dump(
             sanitized_runtime_instance(instance, output_patch, args.project_root),
+            f,
             indent=2,
             ensure_ascii=False,
         )
-        + "\n",
-        encoding="utf-8",
-    )
+        f.write("\n")
+
     print(f"built {instance['instance_id']}: {output_patch}")
 
 

@@ -1,0 +1,8 @@
+{
+  "instance_id": "testify_4c4d011",
+  "repo_url": "https://github.com/stretchr/testify",
+  "base_commit": "c3b0c9b4f50cd8320ccdcdfd3ffd6afc5b109c4a",
+  "test_command": "go test ./assert -run '^TestObjectsAreEqualValues$' -v",
+  "expected_failing_test": "TestObjectsAreEqualValues",
+  "test_patch_path": "benchmarks/patches/testify_4c4d011_test.patch"
+}

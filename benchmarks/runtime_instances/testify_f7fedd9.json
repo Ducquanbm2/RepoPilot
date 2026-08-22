@@ -1,0 +1,8 @@
+{
+  "instance_id": "testify_f7fedd9",
+  "repo_url": "https://github.com/stretchr/testify",
+  "base_commit": "5911e38e09462765ebbe93bd7e79d761cc73d4fd9",
+  "test_command": "go test ./assert -run '^TestLen' -v",
+  "expected_failing_test": "TestLen",
+  "test_patch_path": "benchmarks/patches/testify_f7fedd9_test.patch"
+}
