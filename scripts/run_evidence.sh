@@ -86,11 +86,12 @@ run_in_sandbox() {
     local CMD="$2"
     local LOG_FILE="$3"
     local EXIT_FILE="$4"
+    local RUN_TAG="${5:-Run}"
 
     mkdir -p "$(dirname "${LOG_FILE}")"
     mkdir -p "$(dirname "${EXIT_FILE}")"
 
-    echo "Executing in sandbox: ${CMD}"
+    echo "Executing in sandbox (${RUN_TAG}): ${CMD}"
     
     local START_TIME
     START_TIME=$(date +%s%N)
@@ -120,9 +121,12 @@ run_in_sandbox() {
     local END_TIME
     END_TIME=$(date +%s%N)
     local DURATION_MS=$(( (END_TIME - START_TIME) / 1000000 ))
+    local DURATION_SEC
+    DURATION_SEC=$(awk "BEGIN {printf \"%.2f\", ${DURATION_MS}/1000}")
 
     echo "${EXIT_CODE}" > "${EXIT_FILE}"
-    echo " -> Exit Code: ${EXIT_CODE} (${DURATION_MS} ms)"
+    echo "${DURATION_MS}" > "${EXIT_FILE%.exit}.duration"
+    echo " -> Exit Code: ${EXIT_CODE} | Time: ${DURATION_MS} ms (~${DURATION_SEC}s) [${RUN_TAG}]"
     return 0
 }
 
@@ -167,15 +171,10 @@ verify_instance() {
     echo "${FULL_BASE_SHA}" > "${ARTIFACTS_DIR}/${INSTANCE_ID}-base-sha.txt"
     echo "${FULL_GOLD_SHA}" > "${ARTIFACTS_DIR}/${INSTANCE_ID}-gold-sha.txt"
 
-    # Pre-warm dependencies
-    warm_dependencies "${REPO_DIR}"
-
-    # Extract test patch if not already present
-    local PATCH_FILE="${PATCHES_DIR}/${INSTANCE_ID}_test.patch"
-    if [ ! -f "${PATCH_FILE}" ]; then
-        mkdir -p "${PATCHES_DIR}"
-        git -C "${REPO_DIR}" diff --no-ext-diff "${FULL_BASE_SHA}" "${FULL_GOLD_SHA}" -- "*_test.go" > "${PATCH_FILE}"
-    fi
+    # Reset build cache for this instance to ensure pure independence & Cold Run measurement
+    rm -rf "${CACHE_DIR}/gocache"
+    mkdir -p "${CACHE_DIR}/gocache"
+    chmod -R 777 "${CACHE_DIR}" 2>/dev/null || true
 
     local WORKTREE_BASE="/tmp/repopilot-worktree-${INSTANCE_ID}-base"
     local WORKTREE_GOLD="/tmp/repopilot-worktree-${INSTANCE_ID}-gold"
@@ -185,17 +184,30 @@ verify_instance() {
     git -C "${REPO_DIR}" worktree remove --force "${WORKTREE_GOLD}" 2>/dev/null || true
     rm -rf "${WORKTREE_BASE}" "${WORKTREE_GOLD}"
 
+    # Create base worktree
+    git -C "${REPO_DIR}" worktree add --detach "${WORKTREE_BASE}" "${FULL_BASE_SHA}"
+
+    # Pre-warm dependencies on the exact commit
+    warm_dependencies "${WORKTREE_BASE}"
+
+    # Extract test patch if not already present
+    local PATCH_FILE="${PATCHES_DIR}/${INSTANCE_ID}_test.patch"
+    if [ ! -f "${PATCH_FILE}" ]; then
+        mkdir -p "${PATCHES_DIR}"
+        git -C "${REPO_DIR}" diff --no-ext-diff "${FULL_BASE_SHA}" "${FULL_GOLD_SHA}" -- "*_test.go" > "${PATCH_FILE}"
+    fi
+
     # --------------------------------------------------------------------------
     # Run 1: Base Targeted (Fail-to-Pass)
     # --------------------------------------------------------------------------
     echo "--- [Run 1/4] Base Targeted (F2P, Expect Fail != 0) ---"
-    git -C "${REPO_DIR}" worktree add --detach "${WORKTREE_BASE}" "${FULL_BASE_SHA}"
     if [ -s "${PATCH_FILE}" ]; then
         (cd "${WORKTREE_BASE}" && git apply --whitespace=nowarn --ignore-whitespace "${PATCH_FILE}")
     fi
     run_in_sandbox "${WORKTREE_BASE}" "${TARGETED_TEST_CMD}" \
         "${INSTANCE_ART_DIR}/base-targeted.log" \
-        "${INSTANCE_ART_DIR}/base-targeted.exit"
+        "${INSTANCE_ART_DIR}/base-targeted.exit" \
+        "COLD RUN"
 
     local R1_EXIT
     R1_EXIT=$(cat "${INSTANCE_ART_DIR}/base-targeted.exit")
@@ -213,7 +225,8 @@ verify_instance() {
     (cd "${WORKTREE_BASE}" && git reset --hard && git clean -fdx)
     run_in_sandbox "${WORKTREE_BASE}" "${REGRESSION_TEST_CMD}" \
         "${INSTANCE_ART_DIR}/base-regression.log" \
-        "${INSTANCE_ART_DIR}/base-regression.exit"
+        "${INSTANCE_ART_DIR}/base-regression.exit" \
+        "WARM RUN"
 
     local R2_EXIT
     R2_EXIT=$(cat "${INSTANCE_ART_DIR}/base-regression.exit")
@@ -234,7 +247,8 @@ verify_instance() {
     git -C "${REPO_DIR}" worktree add --detach "${WORKTREE_GOLD}" "${FULL_GOLD_SHA}"
     run_in_sandbox "${WORKTREE_GOLD}" "${TARGETED_TEST_CMD}" \
         "${INSTANCE_ART_DIR}/gold-targeted.log" \
-        "${INSTANCE_ART_DIR}/gold-targeted.exit"
+        "${INSTANCE_ART_DIR}/gold-targeted.exit" \
+        "WARM RUN"
 
     local R3_EXIT
     R3_EXIT=$(cat "${INSTANCE_ART_DIR}/gold-targeted.exit")
@@ -250,7 +264,8 @@ verify_instance() {
     echo "--- [Run 4/4] Gold Regression (Expect Pass == 0) ---"
     run_in_sandbox "${WORKTREE_GOLD}" "${REGRESSION_TEST_CMD}" \
         "${INSTANCE_ART_DIR}/gold-regression.log" \
-        "${INSTANCE_ART_DIR}/gold-regression.exit"
+        "${INSTANCE_ART_DIR}/gold-regression.exit" \
+        "WARM RUN"
 
     local R4_EXIT
     R4_EXIT=$(cat "${INSTANCE_ART_DIR}/gold-regression.exit")
@@ -264,6 +279,26 @@ verify_instance() {
     git -C "${REPO_DIR}" worktree remove --force "${WORKTREE_GOLD}" 2>/dev/null || true
     rm -rf "${WORKTREE_GOLD}"
 
+    local T1
+    T1=$(cat "${INSTANCE_ART_DIR}/base-targeted.duration" 2>/dev/null || echo 0)
+    local T2
+    T2=$(cat "${INSTANCE_ART_DIR}/base-regression.duration" 2>/dev/null || echo 0)
+    local T3
+    T3=$(cat "${INSTANCE_ART_DIR}/gold-targeted.duration" 2>/dev/null || echo 0)
+    local T4
+    T4=$(cat "${INSTANCE_ART_DIR}/gold-regression.duration" 2>/dev/null || echo 0)
+
+    echo "=================================================================="
+    echo " [TIMING REPORT] Performance for ${INSTANCE_ID}:"
+    echo "   - Run 1 (Cold Run):   ${T1} ms (~$(awk "BEGIN {printf \"%.2f\", ${T1}/1000}")s)"
+    echo "   - Run 2 (Warm Run):   ${T2} ms (~$(awk "BEGIN {printf \"%.2f\", ${T2}/1000}")s)"
+    echo "   - Run 3 (Warm Run):   ${T3} ms (~$(awk "BEGIN {printf \"%.2f\", ${T3}/1000}")s)"
+    echo "   - Run 4 (Warm Run):   ${T4} ms (~$(awk "BEGIN {printf \"%.2f\", ${T4}/1000}")s)"
+    echo "=================================================================="
+    
+    # Clean up build cache after completing this instance for true independence
+    rm -rf "${CACHE_DIR}/gocache"
+    
     echo "--- Verification Completed for ${INSTANCE_ID} ---"
 }
 
@@ -287,8 +322,9 @@ if target:
         print(f'Error: instance {target} not found in manifest', file=sys.stderr)
         sys.exit(1)
 else:
-    # Run at least 3 instances to establish baseline (e.g. first 3)
-    instances = instances[:3]
+    # Baseline: zap_1033, zap_1017, testify_4c4d011 (covering both zap and testify repos)
+    baseline_ids = ['zap_1033', 'zap_1017', 'testify_4c4d011']
+    instances = [i for i in instances if i['instance_id'] in baseline_ids]
 
 for inst in instances:
     pkg = inst['test_command'].split()[2] if len(inst['test_command'].split()) > 2 and inst['test_command'].split()[2].startswith('./') else './...'
@@ -310,6 +346,12 @@ for inst in instances:
         r_cmd=$(python3 -c "import json; d=json.loads('''$line'''); print(d['regression_command'])")
         verify_instance "${i_id}" "${r_url}" "${b_sha}" "${g_sha}" "${t_cmd}" "${r_cmd}"
     done
+
+    echo "=================================================================="
+    echo " Cleaning up cache for clean reproducibility..."
+    echo "=================================================================="
+    rm -rf "${CACHE_DIR}"
+    echo "Cache directory cleaned: ${CACHE_DIR}"
 
     echo "=================================================================="
     echo " All verification runs completed. Summary of generated artifacts:"
