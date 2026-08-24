@@ -72,6 +72,6 @@ temp/
 dist/
 build/
 runs/
-artifacts/
+#artifacts/
 logs/
 *.log

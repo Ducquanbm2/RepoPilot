@@ -1,0 +1,7 @@
+Image Tag: repopilot-runner:w1
+Image ID: sha256:04c833cd5318cecebdc1d59ae8da235eefe20053881dda9b959ad1dbdaacfc1e
+RepoDigest: repopilot-runner@sha256:04c833cd5318cecebdc1d59ae8da235eefe20053881dda9b959ad1dbdaacfc1e
+Toolchain: go version go1.21.3 linux/amd64
+Base Image: golang:1.21.3-alpine3.18
+OS Packages: git, bash, build-base (gcc, g++, make, musl-dev), coreutils, ca-certificates
+Runner User: runneruser (uid=1000, gid=1000)
