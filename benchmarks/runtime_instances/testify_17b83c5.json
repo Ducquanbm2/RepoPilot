@@ -1,0 +1,8 @@
+{
+  "instance_id": "testify_17b83c5",
+  "repo_url": "https://github.com/stretchr/testify",
+  "base_commit": "be3fbeb9439e3d83cd53a3518c0057b4d1bc0dc0",
+  "test_command": "go test ./assert -run '^TestCompare$' -v",
+  "expected_failing_test": "TestCompare",
+  "test_patch_path": "benchmarks/patches/testify_17b83c5_test.patch"
+}

@@ -1,0 +1,8 @@
+{
+  "instance_id": "testify_6555fd4",
+  "repo_url": "https://github.com/stretchr/testify",
+  "base_commit": "a012e45d185128fe5bf3370e42b0854856e0998e",
+  "test_command": "go test ./assert -run '^TestInEpsilon$' -v",
+  "expected_failing_test": "TestInEpsilon",
+  "test_patch_path": "benchmarks/patches/testify_6555fd4_test.patch"
+}

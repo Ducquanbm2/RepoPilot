@@ -1,0 +1,8 @@
+{
+  "instance_id": "testify_4f554a8",
+  "repo_url": "https://github.com/stretchr/testify",
+  "base_commit": "e8daaaca9cd5c11e45f7aada79cdea3fc9f2b4eb",
+  "test_command": "go test ./assert -run '^TestPanicsWithError' -v",
+  "expected_failing_test": "TestPanicsWithError",
+  "test_patch_path": "benchmarks/patches/testify_4f554a8_test.patch"
+}

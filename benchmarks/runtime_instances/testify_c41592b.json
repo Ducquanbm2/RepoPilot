@@ -1,0 +1,8 @@
+{
+  "instance_id": "testify_c41592b",
+  "repo_url": "https://github.com/stretchr/testify",
+  "base_commit": "0e75f9941b5987a9ef2bd11ff8b24a4b4489e204",
+  "test_command": "go test ./suite -run '^TestUnInitialisedSuites$' -v",
+  "expected_failing_test": "TestUnInitialisedSuites",
+  "test_patch_path": "benchmarks/patches/testify_c41592b_test.patch"
+}
