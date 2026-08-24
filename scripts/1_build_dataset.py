@@ -10,6 +10,15 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
+try:
+    from .f2p_analyzer import analyze_f2p
+    from .p2p_analyzer import analyze_p2p
+    from .leakage_sanitizer import sanitize_text
+except ImportError:  # Support direct execution: python scripts/1_build_dataset.py
+    from f2p_analyzer import analyze_f2p
+    from p2p_analyzer import analyze_p2p
+    from leakage_sanitizer import sanitize_text
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = PROJECT_ROOT / "benchmarks" / "manifests" / "manifest.yaml"
@@ -76,7 +85,10 @@ def patch_path(instance: dict, project_root: Path, patches_dir: Path) -> Path:
 
 
 def sanitized_runtime_instance(instance: dict, patch_file: Path, project_root: Path) -> dict:
-    allowed = ("instance_id", "repo_url", "base_commit", "test_command", "expected_failing_test")
+    allowed = (
+        "instance_id", "repo_url", "base_commit", "gold_commit", "test_command",
+        "expected_failing_test", "issue description", "issue_description",
+    )
     runtime = {key: instance[key] for key in allowed if key in instance}
     runtime["test_patch_path"] = patch_file.relative_to(project_root).as_posix()
     return runtime
@@ -100,16 +112,52 @@ def build_instance(instance: dict, args: argparse.Namespace) -> None:
     )
     if not diff.strip():
         raise ValueError("gold commit contains no *_test.go changes")
+    source_diff = git(
+        repository,
+        "diff",
+        "--no-ext-diff",
+        instance["base_commit"],
+        instance["gold_commit"],
+        "--",
+        "*.go",
+        ":(exclude)*_test.go",
+    )
+
+    f2p_tests = analyze_f2p(repository, instance["base_commit"], instance["gold_commit"])
+    p2p_specs = analyze_p2p(
+        repository,
+        instance["base_commit"],
+        instance["gold_commit"],
+        f2p_tests,
+    )
 
     output_patch = patch_path(instance, args.project_root, args.patches_dir)
     output_patch.parent.mkdir(parents=True, exist_ok=True)
     output_patch.write_text(diff, encoding="utf-8")
+    f2p_patch = args.patches_dir / "f2p" / f"{instance['instance_id']}_eval_f2p.patch"
+    gold_patch = args.patches_dir / "gold" / f"{instance['instance_id']}_gold_solution.patch"
+    f2p_patch.parent.mkdir(parents=True, exist_ok=True)
+    gold_patch.parent.mkdir(parents=True, exist_ok=True)
+    f2p_patch.write_text(diff, encoding="utf-8")
+    gold_patch.write_text(source_diff, encoding="utf-8")
 
     runtime_file = args.runtime_dir / f"{instance['instance_id']}.json"
     runtime_file.parent.mkdir(parents=True, exist_ok=True)
+    runtime = sanitized_runtime_instance(instance, output_patch, args.project_root)
+    runtime["eval_f2p_patch_path"] = f2p_patch.relative_to(args.project_root).as_posix()
+    runtime["gold_solution_patch_path"] = gold_patch.relative_to(args.project_root).as_posix()
+    runtime["problem_statement_path"] = (
+        args.runtime_dir / instance["instance_id"] / "problem_statement.md"
+    ).relative_to(args.project_root).as_posix()
+    statement = args.runtime_dir / instance["instance_id"] / "problem_statement.md"
+    statement.parent.mkdir(parents=True, exist_ok=True)
+    description = instance.get("issue_description", instance.get("issue description", ""))
+    statement.write_text(sanitize_text(str(description)) + "\n", encoding="utf-8")
+    runtime["f2p_tests"] = f2p_tests
+    runtime["p2p_specs"] = p2p_specs
     runtime_file.write_text(
         json.dumps(
-            sanitized_runtime_instance(instance, output_patch, args.project_root),
+            runtime,
             indent=2,
             ensure_ascii=False,
         )
