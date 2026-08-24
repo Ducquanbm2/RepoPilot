@@ -75,3 +75,10 @@ runs/
 #artifacts/
 logs/
 *.log
+
+
+/docs/
+/go-runner-demo/
+/Studyhub/
+/benchmarks/repos/
+*.md

@@ -10,6 +10,11 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
+try:
+    from .check_leakage import audit
+except ImportError:  # Support direct execution.
+    from check_leakage import audit
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RUNTIME_DIR = PROJECT_ROOT / "benchmarks" / "runtime_instances"
@@ -49,6 +54,10 @@ def prepare(instance: dict, args: argparse.Namespace) -> dict:
     run_git(repository, "reset", "--hard")
     run_git(repository, "clean", "-fdx")
     run_git(repository, "checkout", instance["base_commit"])
+
+    leakage_failures = audit(repository, instance)
+    if leakage_failures:
+        raise RuntimeError("; ".join(leakage_failures))
 
     # 2. Áp dụng Test Patch
     run_git(repository, "apply", str(patch))
