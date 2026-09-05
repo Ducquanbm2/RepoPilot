@@ -15,6 +15,10 @@ import shlex
 import subprocess
 from typing import Any
 
+from runner.executor import DockerSandboxRunner
+from runner.validators.patch_validator import PatchValidator
+from runner.workspace import ephemeral_workspace
+from runner.manifest import RunManifest
 from retrieval.src.lexical import LexicalRetriever, read_source
 
 
@@ -50,17 +54,25 @@ def load_instance(path: Path) -> dict[str, Any]:
 
 
 def apply_manual_patch(workspace: Path, patch_path: Path) -> None:
-    """Apply exactly one operator-provided unified diff to a workspace."""
+    """Validate and apply exactly one operator-provided unified diff to a workspace."""
 
     workspace = Path(workspace).resolve()
     patch_path = Path(patch_path).resolve()
     if not patch_path.is_file():
         raise FileNotFoundError(patch_path)
+
+    validator = PatchValidator()
+    val_res = validator.validate_file(patch_path)
+    if not val_res.is_valid:
+        raise ValueError(f"Patch validation failed: {val_res.error_message}")
+
     subprocess.run(["git", "-C", str(workspace), "apply", "--whitespace=nowarn", str(patch_path)], check=True)
 
 
 def run_test_command(workspace: Path, command: str, *, timeout_seconds: int = 300,
                      max_output_chars: int = 20_000) -> dict[str, Any]:
+    '''
+    # Original raw subprocess run on host:
     """Run a trusted runtime test command and return bounded structured output.
 
     ``shlex.split`` preserves quoted regex arguments while avoiding a shell
@@ -80,6 +92,21 @@ def run_test_command(workspace: Path, command: str, *, timeout_seconds: int = 30
     except subprocess.TimeoutExpired as exc:
         output = ((exc.stdout or "") + (exc.stderr or ""))[-max_output_chars:]
         return {"status": "timeout", "exit_code": None, "timed_out": True, "output": output}
+    '''
+
+    """Run a trusted runtime test command inside the isolated Docker sandbox runner.
+    
+    Replaces raw host subprocess invocation with DockerSandboxRunner:
+    - Enforces --network none (no internet access)
+    - Enforces memory limit (2g) and CPU limit (2.0)
+    - Automatically collects exit code, duration, and bounded output
+    """
+    runner = DockerSandboxRunner(
+        default_timeout=timeout_seconds,
+        max_output_chars=max_output_chars
+    )
+    result = runner.run_test(workspace, command, timeout_seconds=timeout_seconds)
+    return result.to_dict()
 
 
 def run_instance(instance_path: Path, workspace: Path, *, patch_path: Path | None = None,
@@ -88,6 +115,9 @@ def run_instance(instance_path: Path, workspace: Path, *, patch_path: Path | Non
 
     instance = load_instance(instance_path)
     query = str(instance.get("issue_description", instance.get("issue description", "")))
+
+    '''
+    # Original execution directly on host workspace:
     retrieval = [item.to_dict() for item in LexicalRetriever(workspace).search(query, top_k=top_k)]
     test_result = None
     if patch_path is not None:
@@ -99,6 +129,21 @@ def run_instance(instance_path: Path, workspace: Path, *, patch_path: Path | Non
     return WorkflowResult(instance["instance_id"], query, retrieval,
                           str(patch_path) if patch_path else None,
                           instance["test_command"], test_result, status)
+    '''
+
+    # Enforce Ephemeral Workspace for isolated, clean checkout execution
+    with ephemeral_workspace(workspace, instance["base_commit"]) as ephem_ws:
+        retrieval = [item.to_dict() for item in LexicalRetriever(ephem_ws).search(query, top_k=top_k)]
+        test_result = None
+        if patch_path is not None:
+            apply_manual_patch(ephem_ws, patch_path)
+            test_result = run_test_command(ephem_ws, instance["test_command"], timeout_seconds=timeout_seconds)
+        status = "retrieved"
+        if test_result is not None:
+            status = "tests_passed" if test_result["status"] == "passed" else "tests_failed"
+        return WorkflowResult(instance["instance_id"], query, retrieval,
+                              str(patch_path) if patch_path else None,
+                              instance["test_command"], test_result, status)
 
 
 def inspect_source(workspace: Path, path: str, start_line: int = 1, end_line: int | None = None) -> dict:

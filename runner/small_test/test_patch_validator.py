@@ -72,12 +72,15 @@ def test_max_lines_exceeded():
 
 def test_real_benchmark_patch_file():
     repo_root = Path(__file__).resolve().parent.parent.parent
-    patch_file = repo_root / "benchmarks" / "patches" / "zap_812_test.patch"
-    if patch_file.exists():
-        validator = PatchValidator()
-        result = validator.validate_file(patch_file)
-        assert result.is_valid is True
-        print(f"  [PASS] test_real_benchmark_patch_file ({patch_file.name})")
+    patch_file = repo_root / "benchmarks" / "patches" / "zap_9367581_test.patch"
+    if not patch_file.exists():
+        patch_file = repo_root / "benchmarks" / "patches" / "testify_4c4d011_test.patch"
+    assert patch_file.exists(), f"Benchmark patch file not found: {patch_file}"
+
+    validator = PatchValidator()
+    result = validator.validate_file(patch_file)
+    assert result.is_valid is True
+    print(f"  [PASS] test_real_benchmark_patch_file ({patch_file.name})")
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from .workflow import run_instance
+from runner.manifest import RunManifest
 
 
 def main() -> int:
@@ -22,9 +23,31 @@ def main() -> int:
                           top_k=args.top_k, timeout_seconds=args.timeout_seconds).to_dict()
     rendered = json.dumps(result, ensure_ascii=False, indent=2)
     print(rendered)
+
+    '''
+    # Original log output without run_manifest stub:
     if args.log:
         args.log.parent.mkdir(parents=True, exist_ok=True)
         args.log.write_text(rendered + "\n", encoding="utf-8")
+    '''
+
+    # Write structured workflow output and generate run_manifest.json stub
+    if args.log:
+        args.log.parent.mkdir(parents=True, exist_ok=True)
+        args.log.write_text(rendered + "\n", encoding="utf-8")
+
+        # Generate and save run_manifest.json stub alongside log
+        instance_data = json.loads(args.instance.read_text(encoding="utf-8"))
+        manifest = RunManifest(
+            run_id=f"run_{result['instance_id']}",
+            instance_id=result["instance_id"],
+            repo_sha=instance_data.get("base_commit", "unknown"),
+            status=result["status"],
+            runner_image="repopilot-runner:w1",
+        )
+        manifest_path = args.log.parent / "run_manifest.json"
+        manifest.write_json(manifest_path)
+
     return 0
 
 
