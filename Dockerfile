@@ -1,6 +1,6 @@
 # RepoPilot Runner Base Image (Week 1 Feasibility Spike)
-# Pinned toolchain: Go 1.21.3 on Alpine 3.18
-FROM golang:1.21.3-alpine3.18
+# Pinned toolchain: Go 1.26.6 on Alpine 3.22
+FROM golang:1.26.6-alpine3.22
 
 # Essential OS packages: git, bash, build-base (CGO/compiler), coreutils, ca-certificates
 RUN apk add --no-cache git bash build-base ca-certificates coreutils

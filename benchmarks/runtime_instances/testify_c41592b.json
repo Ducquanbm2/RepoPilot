@@ -4,5 +4,32 @@
   "base_commit": "0e75f9941b5987a9ef2bd11ff8b24a4b4489e204",
   "test_command": "go test ./suite -run '^TestUnInitialisedSuites$' -v",
   "expected_failing_test": "TestUnInitialisedSuites",
-  "test_patch_path": "benchmarks/patches/testify_c41592b_test.patch"
+  "issue description": "Avoid deadlocks when suite.Require or suite.Assert is called on an uninitialized suite.",
+  "test_patch_path": "benchmarks/patches/testify_c41592b_test.patch",
+  "eval_f2p_patch_path": "benchmarks/patches/f2p/testify_c41592b_eval_f2p.patch",
+  "problem_statement_path": "benchmarks/runtime_instances/testify_c41592b/problem_statement.md",
+  "f2p_tests": [
+    "TestUnInitialisedSuites"
+  ],
+  "p2p_specs": {
+    "github.com/stretchr/testify/suite": {
+      "tests": [
+        "TestFailfastSuite",
+        "TestFailfastSuiteFailFastOn",
+        "TestPassedReturnsFalseWhenSomeTestFails",
+        "TestPassedReturnsTrueWhenAllTestsPass",
+        "TestRunSuite",
+        "TestSkippingSuiteSetup",
+        "TestSubtestPanic",
+        "TestSuiteCallOrder",
+        "TestSuiteGetters",
+        "TestSuiteLogging",
+        "TestSuiteRecoverPanic",
+        "TestSuiteRequireTwice",
+        "TestSuiteWithStats",
+        "TestUnInitializedSuites"
+      ],
+      "command": "go test github.com/stretchr/testify/suite -run '^(TestFailfastSuite|TestFailfastSuiteFailFastOn|TestPassedReturnsFalseWhenSomeTestFails|TestPassedReturnsTrueWhenAllTestsPass|TestRunSuite|TestSkippingSuiteSetup|TestSubtestPanic|TestSuiteCallOrder|TestSuiteGetters|TestSuiteLogging|TestSuiteRecoverPanic|TestSuiteRequireTwice|TestSuiteWithStats|TestUnInitializedSuites)$' -v"
+    }
+  }
 }

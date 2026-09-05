@@ -86,7 +86,7 @@ def patch_path(instance: dict, project_root: Path, patches_dir: Path) -> Path:
 
 def sanitized_runtime_instance(instance: dict, patch_file: Path, project_root: Path) -> dict:
     allowed = (
-        "instance_id", "repo_url", "base_commit", "gold_commit", "test_command",
+        "instance_id", "repo_url", "base_commit", "test_command",
         "expected_failing_test", "issue description", "issue_description",
     )
     runtime = {key: instance[key] for key in allowed if key in instance}
@@ -135,7 +135,14 @@ def build_instance(instance: dict, args: argparse.Namespace) -> None:
     output_patch.parent.mkdir(parents=True, exist_ok=True)
     output_patch.write_text(diff, encoding="utf-8")
     f2p_patch = args.patches_dir / "f2p" / f"{instance['instance_id']}_eval_f2p.patch"
-    gold_patch = args.patches_dir / "gold" / f"{instance['instance_id']}_gold_solution.patch"
+    # Gold implementation changes are evaluator-only data. Keep them outside
+    # benchmarks/ so the runtime view cannot discover the reference solution.
+    gold_patches_dir = getattr(
+        args,
+        "gold_patches_dir",
+        args.project_root / "artifacts" / "g0" / "gold",
+    )
+    gold_patch = gold_patches_dir / f"{instance['instance_id']}_gold_solution.patch"
     f2p_patch.parent.mkdir(parents=True, exist_ok=True)
     gold_patch.parent.mkdir(parents=True, exist_ok=True)
     f2p_patch.write_text(diff, encoding="utf-8")
@@ -145,7 +152,6 @@ def build_instance(instance: dict, args: argparse.Namespace) -> None:
     runtime_file.parent.mkdir(parents=True, exist_ok=True)
     runtime = sanitized_runtime_instance(instance, output_patch, args.project_root)
     runtime["eval_f2p_patch_path"] = f2p_patch.relative_to(args.project_root).as_posix()
-    runtime["gold_solution_patch_path"] = gold_patch.relative_to(args.project_root).as_posix()
     runtime["problem_statement_path"] = (
         args.runtime_dir / instance["instance_id"] / "problem_statement.md"
     ).relative_to(args.project_root).as_posix()
@@ -172,12 +178,18 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--repos-dir", type=Path, default=DEFAULT_REPOS_DIR)
     parser.add_argument("--patches-dir", type=Path, default=DEFAULT_PATCHES_DIR)
+    parser.add_argument(
+        "--gold-patches-dir",
+        type=Path,
+        default=PROJECT_ROOT / "artifacts" / "g0" / "gold",
+        help="Evaluator-only output directory for gold implementation patches",
+    )
     parser.add_argument("--runtime-dir", type=Path, default=DEFAULT_RUNTIME_DIR)
     parser.add_argument("--instance-id")
     args = parser.parse_args()
     args.project_root = PROJECT_ROOT
 
-    try:
+    try:    
         manifest = load_manifest(args.manifest)
         instances = manifest["instances"]
         if args.instance_id:

@@ -51,7 +51,7 @@ Image Tag: ${IMAGE_NAME}
 Image ID: ${IMAGE_ID}
 RepoDigest: ${REPO_DIGEST}
 Toolchain: ${GO_VERSION}
-Base Image: golang:1.21.3-alpine3.18
+Base Image: golang:1.26.6-alpine3.22
 OS Packages: git, bash, build-base (gcc, g++, make, musl-dev), coreutils, ca-certificates
 Runner User: runneruser (uid=1000, gid=1000)
 EOF
@@ -310,6 +310,15 @@ main() {
 
     local TARGET_INSTANCE="${1:-}"
 
+    # Always regenerate runtime views and test patches from the current
+    # evaluator manifest. This prevents stale artifacts from another dataset
+    # revision being silently used.
+    if [ -n "${TARGET_INSTANCE}" ]; then
+        python3 "${PROJECT_ROOT}/scripts/1_build_dataset.py" --instance-id "${TARGET_INSTANCE}"
+    else
+        python3 "${PROJECT_ROOT}/scripts/1_build_dataset.py"
+    fi
+
     python3 -c "
 import yaml, os, sys, json
 with open('${MANIFEST_FILE}') as f:
@@ -322,8 +331,8 @@ if target:
         print(f'Error: instance {target} not found in manifest', file=sys.stderr)
         sys.exit(1)
 else:
-    # Baseline: zap_1033, zap_1017, testify_4c4d011 (covering both zap and testify repos)
-    baseline_ids = ['zap_1033', 'zap_1017', 'testify_4c4d011']
+    # Three current manifest instances are the minimum G0 baseline.
+    baseline_ids = ['zap_9367581', 'zap_b62116b', 'zap_c25a0c0']
     instances = [i for i in instances if i['instance_id'] in baseline_ids]
 
 for inst in instances:
