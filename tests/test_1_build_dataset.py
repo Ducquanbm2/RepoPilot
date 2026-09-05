@@ -1,4 +1,5 @@
 import importlib
+import json
 import sys
 import tempfile
 import unittest
@@ -38,15 +39,24 @@ class BuildDatasetTests(unittest.TestCase):
             root = Path(directory)
             repo = root / "repo"
             repo.mkdir()
-            args = Namespace(repos_dir=root / "repos", patches_dir=root / "patches", runtime_dir=root / "runtime", project_root=root)
+            args = Namespace(
+                repos_dir=root / "repos",
+                patches_dir=root / "patches",
+                runtime_dir=root / "runtime",
+                gold_patches_dir=root / "artifacts/g0/gold",
+                project_root=root,
+            )
             instance = {"instance_id": "demo", "repo_url": "https://github.com/a/b.git", "base_commit": "b", "gold_commit": "g", "test_command": "go test", "issue_description": "Fix details"}
             with patch.object(builder, "analyze_p2p", return_value={}), patch.object(builder, "analyze_f2p", return_value=["TestAdded"]), patch.object(builder, "ensure_repository", return_value=repo), patch.object(builder, "git", side_effect=["", "", "TEST DIFF", "SOURCE DIFF"]):
                 builder.build_instance(instance, args)
             self.assertTrue((root / "patches/demo_test.patch").is_file())
             self.assertTrue((root / "patches/f2p/demo_eval_f2p.patch").is_file())
-            self.assertTrue((root / "patches/gold/demo_gold_solution.patch").is_file())
+            self.assertTrue((root / "artifacts/g0/gold/demo_gold_solution.patch").is_file())
             self.assertEqual((root / "runtime/demo.json").is_file(), True)
             self.assertEqual((root / "runtime/demo/problem_statement.md").read_text().strip(), "Fix details")
+            runtime = json.loads((root / "runtime/demo.json").read_text())
+            self.assertNotIn("gold_commit", runtime)
+            self.assertNotIn("gold_solution_patch_path", runtime)
 
 
 if __name__ == "__main__":

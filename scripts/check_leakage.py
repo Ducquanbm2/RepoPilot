@@ -13,6 +13,7 @@ from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RUNTIME_DIR = PROJECT_ROOT / "benchmarks" / "runtime_instances"
+DEFAULT_MANIFEST = PROJECT_ROOT / "benchmarks" / "manifests" / "manifest.yaml"
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -52,11 +53,29 @@ def audit(repo: Path, instance: dict[str, Any]) -> list[str]:
     return failures
 
 
+def add_evaluator_metadata(instance: dict[str, Any], manifest_path: Path) -> dict[str, Any]:
+    """Attach evaluator-only fields when auditing a sanitized runtime view."""
+    if instance.get("gold_commit"):
+        return instance
+    try:
+        import yaml
+        manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+        for candidate in manifest.get("instances", []) if isinstance(manifest, dict) else []:
+            if candidate.get("instance_id") == instance.get("instance_id"):
+                enriched = dict(instance)
+                enriched["gold_commit"] = candidate.get("gold_commit")
+                return enriched
+    except (OSError, AttributeError, TypeError):
+        pass
+    return instance
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("instance_id", nargs="?")
     parser.add_argument("--instance-id", dest="instance_id_option")
     parser.add_argument("--runtime-dir", type=Path, default=DEFAULT_RUNTIME_DIR)
+    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--repo", type=Path, help="checked-out repository; defaults to cached benchmark repo")
     args = parser.parse_args()
     instance_id = args.instance_id_option or args.instance_id
@@ -65,6 +84,7 @@ def main() -> int:
     runtime_file = args.runtime_dir / f"{instance_id}.json"
     try:
         instance = json.loads(runtime_file.read_text(encoding="utf-8"))
+        instance = add_evaluator_metadata(instance, args.manifest)
         repo = args.repo or PROJECT_ROOT / "benchmarks" / "repos" / instance["repo_url"].rstrip("/").rsplit("/", 1)[-1].removesuffix(".git")
         failures = audit(repo, instance)
     except (OSError, KeyError, json.JSONDecodeError) as exc:
