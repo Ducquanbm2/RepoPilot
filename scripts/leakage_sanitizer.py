@@ -117,11 +117,17 @@ def sanitize_instance(instance: dict[str, Any], repos_dir: Path, patches_dir: Pa
     gold_patch.write_text(gold, encoding="utf-8")
 
     raw_description = instance.get("issue_description", instance.get("issue description", ""))
-    runtime_instance = {key: value for key, value in instance.items() if key not in {"issue description", "issue_description"}}
+    runtime_instance = {
+        key: value
+        for key, value in instance.items()
+        if key not in {
+            "issue description", "issue_description", "gold_commit",
+            "gold_solution_patch_path", "eval_f2p_patch_path",
+        }
+    }
     runtime_instance["issue_description"] = raw_description
     runtime_instance["problem_statement_path"] = (runtime_dir / instance_id / "problem_statement.md").relative_to(project_root).as_posix()
     runtime_instance["eval_f2p_patch_path"] = f2p_patch.relative_to(project_root).as_posix()
-    runtime_instance["gold_solution_patch_path"] = gold_patch.relative_to(project_root).as_posix()
     # Compatibility for older evaluator consumers.
     runtime_instance["test_patch_path"] = runtime_instance["eval_f2p_patch_path"]
     runtime_instance["f2p_tests"] = analyze_f2p(repo, instance["base_commit"], instance["gold_commit"])

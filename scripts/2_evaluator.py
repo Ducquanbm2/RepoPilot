@@ -20,6 +20,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RUNTIME_DIR = PROJECT_ROOT / "benchmarks" / "runtime_instances"
 DEFAULT_REPOS_DIR = PROJECT_ROOT / "benchmarks" / "repos"
 DEFAULT_SPECS_DIR = PROJECT_ROOT / "benchmarks" / "execution_specs"
+DEFAULT_MANIFEST = PROJECT_ROOT / "benchmarks" / "manifests" / "manifest.yaml"
 
 
 def repository_name(repo_url: str) -> str:
@@ -75,10 +76,11 @@ def prepare(instance: dict, args: argparse.Namespace) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("instance_id", nargs="?", help="ID of the benchmark instance (e.g. zap_1033)")
+    parser.add_argument("instance_id", nargs="?", help="ID of the benchmark instance (e.g. zap_9367581)")
     parser.add_argument("--instance-id", dest="instance_id_option", help="ID of the benchmark instance")
     parser.add_argument("--runtime-dir", type=Path, default=DEFAULT_RUNTIME_DIR)
     parser.add_argument("--repos-dir", type=Path, default=DEFAULT_REPOS_DIR)
+    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--output", type=Path)
     
     # 1. Parse argument từ Terminal trước
@@ -98,6 +100,21 @@ def main() -> int:
 
         with open(runtime_file, "r", encoding="utf-8") as f:
             instance = json.load(f)
+
+        # Gold metadata belongs to the evaluator, not to the runtime view.
+        # Load it from the evaluator-only manifest only for leakage auditing.
+        try:
+            import yaml
+            manifest = yaml.safe_load(args.manifest.read_text(encoding="utf-8"))
+            manifest_instances = manifest.get("instances", []) if isinstance(manifest, dict) else []
+            manifest_instance = next(
+                (item for item in manifest_instances if item.get("instance_id") == args.instance_id),
+                None,
+            )
+            if manifest_instance and manifest_instance.get("gold_commit"):
+                instance["gold_commit"] = manifest_instance["gold_commit"]
+        except (OSError, AttributeError, TypeError):
+            pass
 
         # 3. Chuẩn bị Workspace
         spec = prepare(instance, args)

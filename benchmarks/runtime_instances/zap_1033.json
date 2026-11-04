@@ -1,8 +1,0 @@
-{
-  "instance_id": "zap_1033",
-  "repo_url": "https://github.com/uber-go/zap",
-  "base_commit": "10b1fe4",
-  "test_command": "go test ./zapcore -run '^TestSamplerWithZeroThereafter$' -v",
-  "expected_failing_test": "TestSamplerWithZeroThereafter",
-  "test_patch_path": "benchmarks/patches/zap_1033_test.patch"
-}

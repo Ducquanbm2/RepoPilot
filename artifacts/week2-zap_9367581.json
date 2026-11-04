@@ -1,0 +1,248 @@
+{
+  "instance_id": "zap_9367581",
+  "query": "The sampler panics when thereafter is set to zero; support dropping all duplicate messages after the initial limit.",
+  "retrieval": [
+    {
+      "path": "logger_test.go",
+      "score": 21.0,
+      "matched_lines": [],
+      "symbols": [
+        "makeCountingHook",
+        "TestLoggerAtomicLevel",
+        "TestLoggerInitialFields",
+        "TestLoggerWith",
+        "TestLoggerLogPanic",
+        "TestLoggerLogFatal",
+        "TestLoggerLeveledMethods",
+        "TestLoggerAlwaysPanics",
+        "TestLoggerAlwaysFatals",
+        "TestLoggerDPanic",
+        "TestLoggerNoOpsDisabledLevels",
+        "TestLoggerNames",
+        "TestLoggerWriteFailure",
+        "TestLoggerSync",
+        "TestLoggerSyncFail",
+        "TestLoggerAddCaller",
+        "TestLoggerAddCallerFunction",
+        "TestLoggerAddCallerFail",
+        "TestLoggerReplaceCore",
+        "TestLoggerIncreaseLevel",
+        "TestLoggerHooks",
+        "TestLoggerConcurrent",
+        "TestLoggerCustomOnFatal",
+        "finished",
+        "TestNopLogger",
+        "infoLog",
+        "infoLogSugared"
+      ],
+      "matched_fields": [
+        "symbol",
+        "identifier"
+      ]
+    },
+    {
+      "path": "zapcore/sampler.go",
+      "score": 18.0,
+      "matched_lines": [],
+      "symbols": [
+        "counter",
+        "counters",
+        "newCounters",
+        "get",
+        "fnv32a",
+        "IncCheckReset",
+        "SamplingDecision",
+        "optionFunc",
+        "apply",
+        "SamplerOption",
+        "nopSamplingHook",
+        "SamplerHook",
+        "NewSamplerWithOptions",
+        "sampler",
+        "NewSampler",
+        "With",
+        "Check"
+      ],
+      "matched_fields": [
+        "path",
+        "symbol",
+        "identifier"
+      ]
+    },
+    {
+      "path": "zapcore/sampler_bench_test.go",
+      "score": 18.0,
+      "matched_lines": [],
+      "symbols": [
+        "counterTestCases",
+        "BenchmarkSampler_Check",
+        "makeSamplerCountingHook",
+        "BenchmarkSampler_CheckWithHook"
+      ],
+      "matched_fields": [
+        "path",
+        "symbol",
+        "identifier"
+      ]
+    },
+    {
+      "path": "zapcore/sampler_test.go",
+      "score": 17.0,
+      "matched_lines": [],
+      "symbols": [
+        "fakeSampler",
+        "assertSequence",
+        "writeSequence",
+        "TestSampler",
+        "TestSamplerDisabledLevels",
+        "TestSamplerTicking",
+        "countingCore",
+        "Check",
+        "Write",
+        "With",
+        "Enabled",
+        "Sync",
+        "TestSamplerConcurrent",
+        "wg",
+        "TestSamplerRaces",
+        "wg",
+        "TestSamplerUnknownLevels"
+      ],
+      "matched_fields": [
+        "path",
+        "symbol",
+        "identifier"
+      ]
+    },
+    {
+      "path": "config.go",
+      "score": 15.0,
+      "matched_lines": [],
+      "symbols": [
+        "SamplingConfig",
+        "Config",
+        "NewProductionEncoderConfig",
+        "NewProductionConfig",
+        "NewDevelopmentEncoderConfig",
+        "NewDevelopmentConfig",
+        "Build",
+        "buildOptions",
+        "samplerOpts",
+        "openSinks",
+        "buildEncoder"
+      ],
+      "matched_fields": [
+        "symbol",
+        "identifier"
+      ]
+    },
+    {
+      "path": "zapcore/level.go",
+      "score": 15.0,
+      "matched_lines": [],
+      "symbols": [
+        "errUnmarshalNilLevel",
+        "Level",
+        "String",
+        "CapitalString",
+        "MarshalText",
+        "UnmarshalText",
+        "unmarshalText",
+        "Set",
+        "Get",
+        "Enabled",
+        "LevelEnabler"
+      ],
+      "matched_fields": [
+        "symbol",
+        "identifier"
+      ]
+    },
+    {
+      "path": "level.go",
+      "score": 14.0,
+      "matched_lines": [],
+      "symbols": [
+        "LevelEnablerFunc",
+        "Enabled",
+        "AtomicLevel",
+        "NewAtomicLevel",
+        "NewAtomicLevelAt",
+        "Enabled",
+        "Level",
+        "SetLevel",
+        "String",
+        "UnmarshalText",
+        "l",
+        "MarshalText"
+      ],
+      "matched_fields": [
+        "symbol",
+        "identifier"
+      ]
+    },
+    {
+      "path": "benchmarks/zap_test.go",
+      "score": 13.0,
+      "matched_lines": [],
+      "symbols": [
+        "fakeMessages",
+        "getMessage",
+        "users",
+        "MarshalLogArray",
+        "err",
+        "user",
+        "MarshalLogObject",
+        "newZapLogger",
+        "newSampledLogger",
+        "fakeFields",
+        "fakeSugarFields",
+        "fakeFmtArgs"
+      ],
+      "matched_fields": [
+        "symbol",
+        "identifier"
+      ]
+    },
+    {
+      "path": "config_test.go",
+      "score": 13.0,
+      "matched_lines": [],
+      "symbols": [
+        "TestConfig",
+        "TestConfigWithInvalidPaths",
+        "TestConfigWithMissingAttributes",
+        "makeSamplerCountingHook",
+        "TestConfigWithSamplingHook"
+      ],
+      "matched_fields": [
+        "symbol",
+        "identifier"
+      ]
+    },
+    {
+      "path": "encoder_test.go",
+      "score": 12.0,
+      "matched_lines": [],
+      "symbols": [
+        "TestRegisterDefaultEncoders",
+        "TestRegisterEncoder",
+        "TestDuplicateRegisterEncoder",
+        "TestRegisterEncoderNoName",
+        "TestNewEncoder",
+        "TestNewEncoderNotRegistered",
+        "TestNewEncoderNoName",
+        "testEncoders",
+        "testEncodersRegistered",
+        "newNilEncoder"
+      ],
+      "matched_fields": [
+        "symbol",
+        "identifier"
+      ]
+    }
+  ],
+  "patch_path": "artifacts/g0/gold/zap_9367581_gold_solution.patch",
+  "test_command": "go test ./zapcore -run '^TestSamplerWithZeroThereafter$' -v",
+  "status": "patched"
+}

@@ -1,0 +1,43 @@
+name: Week 2 Smoke Test
+
+on:
+  push:
+    branches:
+      - w2-runner
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  smoke-test:
+    name: Clean Checkout & Small Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify Clean Workspace & Git Status
+        run: |
+          echo "=== Git Status on Fresh Checkout ==="
+          git status --short
+          test -z "$(git status --short)" || (echo "Workspace is dirty after checkout!" && exit 1)
+
+      - name: Run Runner Small Tests
+        run: |
+          echo "=== Running Runner Small Tests ==="
+          python runner/small_test/run_all.py
+
+      - name: Verify CLI Help & Syntax
+        run: |
+          echo "=== Verifying CLI Syntax and Import ==="
+          python -m py_compile orchestrator/src/cli.py
+          python -m py_compile orchestrator/src/workflow.py
+          python -m orchestrator.src.cli --help

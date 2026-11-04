@@ -24,6 +24,16 @@ class F2PAnalyzerTests(unittest.TestCase):
         run.return_value.stdout = ""
         self.assertEqual(find_f2p_tests("repo", "base", "gold"), [])
 
+    @patch("subprocess.run")
+    def test_finds_modified_test_from_hunk_context(self, run):
+        run.return_value.stdout = (
+            "diff --git a/x_test.go b/x_test.go\n"
+            "@@ -10,3 +10,3 @@ func TestChanged(t *testing.T) {\n"
+            "-\toldAssertion(t)\n"
+            "+\tnewAssertion(t)\n"
+        )
+        self.assertEqual(analyze_f2p("repo", "base", "gold"), ["TestChanged"])
+
     @patch("subprocess.run", side_effect=subprocess.CalledProcessError(1, "git"))
     def test_git_error_is_propagated(self, _run):
         with self.assertRaises(subprocess.CalledProcessError):
