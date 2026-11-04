@@ -1,4 +1,4 @@
-# Week 2 integration verification — 2026-11-04
+# Week 2 integration verification â€” 2026-11-04
 
 Environment: Windows amd64, Python 3.11 virtual environment, Go 1.26.6,
 Docker Desktop Linux engine 28.5.2. Results apply to this environment.
@@ -37,7 +37,7 @@ Commands run from repository root using `.venv/Scripts/python.exe` as Python:
 - `python -m pytest -q`: initially 36 passed; after CLI regression checks 39 passed.
 - From indexer-go: `go test ./...`: exporter package passed, spike-loader has no tests.
 - `docker build -t repopilot-runner:w1 .`: passed with repaired base reference.
-- Retrieval CLI source inspection of `zapcore/sampler.go` lines 195–220: passed.
+- Retrieval CLI source inspection of `zapcore/sampler.go` lines 195â€“220: passed.
 - Existing orchestrator CLI used with a temporary instance and combined evaluator
   implementation/test patch, preserving LF bytes. Targeted and package regression passed.
 
