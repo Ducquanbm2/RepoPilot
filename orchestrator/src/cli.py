@@ -48,7 +48,7 @@ def main() -> int:
         manifest_path = args.log.parent / "run_manifest.json"
         manifest.write_json(manifest_path)
 
-    return 0
+    return 1 if result["status"] == "tests_failed" else 0
 
 
 if __name__ == "__main__":
